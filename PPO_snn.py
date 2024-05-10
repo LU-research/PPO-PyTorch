@@ -3,6 +3,8 @@ import torch.nn as nn
 from torch.distributions import MultivariateNormal
 from torch.distributions import Categorical
 
+from network_snn import SpikingNN
+
 ################################## set device ##################################
 print("============================================================================================")
 # set device to cpu or cuda
@@ -133,6 +135,11 @@ class PPO:
         self.K_epochs = K_epochs
         
         self.buffer = RolloutBuffer()
+
+        ######################### SD Code #########################
+        self.actor = SpikingNN(beta=0.99, T=40, n_input=state_dim, n_hidden=[64, 64], n_output=action_dim).to(device)
+        self.critic = SpikingNN(beta=0.99, T=40, n_input=state_dim, n_hidden=[64, 64], n_output=1).to(device)
+        ###########################################################
 
         self.policy = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init).to(device)
         self.optimizer = torch.optim.Adam([

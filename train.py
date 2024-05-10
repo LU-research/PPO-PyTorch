@@ -2,12 +2,13 @@ import os
 import glob
 import time
 from datetime import datetime
+from PIL import Image
 
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 
 import gym
-import roboschool
 
 from PPO import PPO
 
@@ -16,12 +17,12 @@ def train():
     print("============================================================================================")
 
     ####### initialize environment hyperparameters ######
-    env_name = "RoboschoolWalker2d-v1"
+    env_name = "CartPole-v1"
 
-    has_continuous_action_space = True  # continuous action space; else discrete
+    has_continuous_action_space = False  # continuous action space; else discrete
 
     max_ep_len = 1000                   # max timesteps in one episode
-    max_training_timesteps = int(3e6)   # break training loop if timeteps > max_training_timesteps
+    max_training_timesteps = int(1e5)   # break training loop if timeteps > max_training_timesteps
 
     print_freq = max_ep_len * 10        # print avg reward in the interval (in num timesteps)
     log_freq = max_ep_len * 2           # log avg reward in the interval (in num timesteps)
@@ -50,7 +51,7 @@ def train():
 
     print("training environment name : " + env_name)
 
-    env = gym.make(env_name)
+    env = gym.make(env_name, render_mode='rgb_array')
 
     # state space dimension
     state_dim = env.observation_space.shape[0]
@@ -167,18 +168,16 @@ def train():
     # training loop
     while time_step <= max_training_timesteps:
 
-        state = env.reset()
+        state, _ = env.reset()
         current_ep_reward = 0
 
         for t in range(1, max_ep_len+1):
-
-            # select action with policy
             action = ppo_agent.select_action(state)
-            state, reward, done, _ = env.step(action)
+            state, reward, terminated, truncated, _ = env.step(action)
 
             # saving reward and is_terminals
             ppo_agent.buffer.rewards.append(reward)
-            ppo_agent.buffer.is_terminals.append(done)
+            ppo_agent.buffer.is_terminals.append(terminated + truncated)
 
             time_step +=1
             current_ep_reward += reward
@@ -226,7 +225,7 @@ def train():
                 print("--------------------------------------------------------------------------------------------")
 
             # break; if the episode is over
-            if done:
+            if terminated or truncated:
                 break
 
         print_running_reward += current_ep_reward
