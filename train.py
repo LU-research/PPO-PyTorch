@@ -2,7 +2,6 @@ import os
 import glob
 import time
 from datetime import datetime
-from PIL import Image
 
 import torch
 import numpy as np
@@ -10,7 +9,7 @@ import matplotlib.pyplot as plt
 
 import gym
 
-from PPO import PPO
+from PPO_snn import PPO
 
 ################################### Training ###################################
 def train():

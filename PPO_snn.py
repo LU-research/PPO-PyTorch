@@ -1,4 +1,5 @@
 import torch
+from torch.optim import Adam
 import torch.nn as nn
 from torch.distributions import MultivariateNormal
 from torch.distributions import Categorical
@@ -139,16 +140,25 @@ class PPO:
         ######################### SD Code #########################
         self.actor = SpikingNN(beta=0.99, T=40, n_input=state_dim, n_hidden=[64, 64], n_output=action_dim).to(device)
         self.critic = SpikingNN(beta=0.99, T=40, n_input=state_dim, n_hidden=[64, 64], n_output=1).to(device)
+
+        self.opt_actor = Adam(self.actor.parameters(), lr=lr_actor)
+        self.opt_critic = Adam(self.critic.parameters(), lr=lr_critic)
+
+        self.old_actor = SpikingNN(beta=0.99, T=40, n_input=state_dim, n_hidden=[64, 64], n_output=action_dim).to(device)
+        self.old_actor.load_state_dict(self.actor.state_dict())
+
+        self.old_critic = SpikingNN(beta=0.99, T=40, n_input=state_dim, n_hidden=[64, 64], n_output=1).to(device)
+        self.old_critic.load_state_dict(self.critic.state_dict())
         ###########################################################
 
-        self.policy = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init).to(device)
-        self.optimizer = torch.optim.Adam([
-                        {'params': self.policy.actor.parameters(), 'lr': lr_actor},
-                        {'params': self.policy.critic.parameters(), 'lr': lr_critic}
-                    ])
+        # self.policy = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init).to(device)
+        # self.optimizer = torch.optim.Adam([
+        #                 {'params': self.policy.actor.parameters(), 'lr': lr_actor},
+        #                 {'params': self.policy.critic.parameters(), 'lr': lr_critic}
+        #             ])
 
-        self.policy_old = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init).to(device)
-        self.policy_old.load_state_dict(self.policy.state_dict())
+        # self.policy_old_actor = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init).to(device)
+        # self.policy_old.load_state_dict(self.policy.state_dict())
         
         self.MseLoss = nn.MSELoss()
 
@@ -194,7 +204,21 @@ class PPO:
         else:
             with torch.no_grad():
                 state = torch.FloatTensor(state).to(device)
-                action, action_logprob, state_val = self.policy_old.act(state)
+                ######################### SD Code #########################
+                _, _, lif3_mem_rec = self.old_actor(state)
+                logits = lif3_mem_rec[-1]
+                dist = Categorical(logits=logits)
+
+                action = dist.sample()
+                action_logprob = dist.log_prob(action)
+                _, _, lif3_mem_rec = self.old_critic(state)
+                state_val = lif3_mem_rec[-1]
+
+                action = action.detach()
+                action_logprob = action_logprob.detach()
+                state_val = state_val.detach()
+                ###########################################################
+                # action, action_logprob, state_val = self.policy_old.act(state)
             
             self.buffer.states.append(state)
             self.buffer.actions.append(action)
@@ -228,9 +252,18 @@ class PPO:
 
         # Optimize policy for K epochs
         for _ in range(self.K_epochs):
+            ######################### SD Code #########################
+            _, _, lif3_mem_rec = self.actor(old_states)
+            logits = lif3_mem_rec[-1]
+            dist = Categorical(logits=logits)
+            logprobs = dist.log_prob(old_actions)
+            dist_entropy = dist.entropy()
 
+            _, _, lif3_mem_rec = self.critic(old_states)
+            state_values = lif3_mem_rec[-1]
+            ###########################################################
             # Evaluating old actions and values
-            logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
+            # logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
 
             # match state_values tensor dimensions with rewards tensor
             state_values = torch.squeeze(state_values)
