@@ -279,12 +279,15 @@ class PPO:
             loss = -torch.min(surr1, surr2) + 0.5 * self.MseLoss(state_values, rewards) - 0.01 * dist_entropy
             
             # take gradient step
-            self.optimizer.zero_grad()
+            self.opt_actor.zero_grad()
+            self.opt_critic.zero_grad()
             loss.mean().backward()
-            self.optimizer.step()
+            self.opt_actor.step()
+            self.opt_critic.step()
             
         # Copy new weights into old policy
-        self.policy_old.load_state_dict(self.policy.state_dict())
+        self.old_actor.load_state_dict(self.actor.state_dict())
+        self.old_critic.load_state_dict(self.critic.state_dict())
 
         # clear buffer
         self.buffer.clear()
