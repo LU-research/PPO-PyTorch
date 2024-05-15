@@ -279,25 +279,41 @@ class PPO:
             loss = -torch.min(surr1, surr2) + 0.5 * self.MseLoss(state_values, rewards) - 0.01 * dist_entropy
             
             # take gradient step
+            ######################### SD Code ######################
             self.opt_actor.zero_grad()
             self.opt_critic.zero_grad()
             loss.mean().backward()
             self.opt_actor.step()
             self.opt_critic.step()
+            ########################################################
+            # self.optimizer.zero_grad()
+            # loss.mean().backward()
+            # self.optimizer.step()
             
         # Copy new weights into old policy
+        ######################### SD Code ######################
         self.old_actor.load_state_dict(self.actor.state_dict())
         self.old_critic.load_state_dict(self.critic.state_dict())
+        ########################################################
+        # self.policy_old.load_state_dict(self.policy.state_dict())
 
         # clear buffer
         self.buffer.clear()
     
-    def save(self, checkpoint_path):
-        torch.save(self.policy_old.state_dict(), checkpoint_path)
+    def save(self, actor_checkpoint_path, critic_checkpoint_path):
+        ######################### SD Code ######################
+        torch.save(self.old_actor.state_dict(), actor_checkpoint_path)
+        torch.save(self.old_critic.state_dict(), critic_checkpoint_path)
+        ########################################################
+        # torch.save(self.policy_old.state_dict(), checkpoint_path)
    
-    def load(self, checkpoint_path):
-        self.policy_old.load_state_dict(torch.load(checkpoint_path, map_location=lambda storage, loc: storage))
-        self.policy.load_state_dict(torch.load(checkpoint_path, map_location=lambda storage, loc: storage))
+    def load(self, actor_checkpoint_path, critic_checkpoint_path):
+        ######################### SD Code ######################
+        self.old_actor.load_state_dict(torch.load(actor_checkpoint_path, map_location=lambda storage, loc: storage))
+        self.old_critic.load_state_dict(torch.load(critic_checkpoint_path, map_location=lambda storage, loc: storage))
+        ########################################################
+        # self.policy_old.load_state_dict(torch.load(checkpoint_path, map_location=lambda storage, loc: storage))
+        # self.policy.load_state_dict(torch.load(checkpoint_path, map_location=lambda storage, loc: storage))
         
         
        

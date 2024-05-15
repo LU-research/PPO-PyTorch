@@ -21,7 +21,7 @@ def train():
     has_continuous_action_space = False  # continuous action space; else discrete
 
     max_ep_len = 1000                   # max timesteps in one episode
-    max_training_timesteps = int(1e5)   # break training loop if timeteps > max_training_timesteps
+    max_training_timesteps = int(10e5)   # break training loop if timeteps > max_training_timesteps
 
     print_freq = max_ep_len * 10        # print avg reward in the interval (in num timesteps)
     log_freq = max_ep_len * 2           # log avg reward in the interval (in num timesteps)
@@ -96,8 +96,9 @@ def train():
           os.makedirs(directory)
 
 
-    checkpoint_path = directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, run_num_pretrained)
-    print("save checkpoint path : " + checkpoint_path)
+    actor_checkpoint_path = directory + "PPO_actor_{}_{}_{}.pth".format(env_name, random_seed, run_num_pretrained)
+    critic_checkpoint_path = directory + "PPO_critic_{}_{}_{}.pth".format(env_name, random_seed, run_num_pretrained)
+    print("save checkpoint path : " + actor_checkpoint_path)
     #####################################################
 
 
@@ -217,8 +218,8 @@ def train():
             # save model weights
             if time_step % save_model_freq == 0:
                 print("--------------------------------------------------------------------------------------------")
-                print("saving model at : " + checkpoint_path)
-                ppo_agent.save(checkpoint_path)
+                print("saving model at : " + actor_checkpoint_path)
+                ppo_agent.save(actor_checkpoint_path, critic_checkpoint_path)
                 print("model saved")
                 print("Elapsed Time  : ", datetime.now().replace(microsecond=0) - start_time)
                 print("--------------------------------------------------------------------------------------------")
