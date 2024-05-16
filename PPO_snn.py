@@ -309,6 +309,9 @@ class PPO:
    
     def load(self, actor_checkpoint_path, critic_checkpoint_path):
         ######################### SD Code ######################
+        self.actor.load_state_dict(torch.load(actor_checkpoint_path, map_location=lambda storage, loc: storage))
+        self.critic.load_state_dict(torch.load(critic_checkpoint_path, map_location=lambda storage, loc: storage))
+
         self.old_actor.load_state_dict(torch.load(actor_checkpoint_path, map_location=lambda storage, loc: storage))
         self.old_critic.load_state_dict(torch.load(critic_checkpoint_path, map_location=lambda storage, loc: storage))
         ########################################################

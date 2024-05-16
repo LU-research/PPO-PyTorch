@@ -145,6 +145,8 @@ def train():
     # initialize a PPO agent
     ppo_agent = PPO(state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std)
 
+    # ppo_agent.load(actor_checkpoint_path, critic_checkpoint_path)
+
     # track total training time
     start_time = datetime.now().replace(microsecond=0)
     print("Started training at (GMT) : ", start_time)
